@@ -1,0 +1,80 @@
+Insert mode
+  i - current block
+  a - next block
+  o - new line
+  I/A - Beginning/End of line or in visual mode
+  R - Replace mode
+
+Visual mode
+  v - Visual mode
+  V - Line mode
+  crtl+v - Block mode
+
+Copy
+  YY - Copy line or number of lines
+  [number]yy - Copy line or number of lines
+  [number]x - current block or number of blocks
+  :n,Ny - Copy lines n through N
+  yw - Copy rest of word
+  y$ - Copy rest of the line
+
+Cut
+  [number]dd - all liner number of lines and copy
+  [number]cc - all liner number of lines, copy and insert mode
+  D/d$ - Cut rest of line
+  C - Cut rest of line and insert mode
+  :n,Nd - Delete lines n through N
+  dw - Cut rest of word
+
+Paste
+  [number]p/P - Paste or paste number of times under/over
+
+Move
+  >/>> - Move text to right
+  </<< - Move text to left
+  == - Auot indent current line
+  ~ - Shift case
+
+Search
+  / ?  - Search down/up
+  n/N - Next/previous search pattern
+  :%s/[something]/[something]/[g][c] - Replace patterns/confirm
+
+Undo/Redo
+  [number]u - undo one or number of undos
+  [number]ctrl+r - redo one or number of redos
+
+Cursor Movement
+  h - cursor left
+  i - cursor right
+  j - cursor down
+  k - cursor up
+  0/| - jump to the start of the line
+  ^ - Move to first non-blank character of the line
+  $ - Move to to the end of the line
+  [number]gg - Goto first line or line number
+  :n/<number>G - Goto to line number
+  GG - Goto last line
+  w/W - Beginning of word to the right
+  e/B - end of word to right
+  b/B - Begining of word to left
+  H - Goto jump to home (top) of screen
+  L - Goto jump to last line of screen
+  M - Goto to middle of screen
+
+Others
+  :! - Execute external command
+  :ls - List all open files
+  :set nu/nonu - Toggle line number on/off
+  :set hls/nohls - Toggle highlight search matches
+  ::nohl - No highlights
+  :set sc/nosc - Toggle show commands as you type them
+  :set ru/noru - Toggle line and column number of the cursor
+  :e - Open file
+  :w - Save file
+  :wq/x - Save and exit
+  :q[!] - Quit/quit without save
+  :next/n - Edit next file
+  :previuos/prev - Edit previous file
+
+

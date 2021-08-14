@@ -1,0 +1,75 @@
+# Run command in docker
+$ docker exec -it [container_name] <command>
+
+# Containers stats
+$ docker stats
+$ docker stats $(docker ps --format={{.Names}})
+$ docker stats <container_name1> <container_name2> ...
+
+# Run a OS command inside the container without that command
+sudo nsenter -t $(docker inspect -f '{{.State.Pid}}' <container_name>) -n <command>
+
+# Example - check open ports inside the container (containers don't have netstat)
+sudo nsenter -t $(docker inspect -f '{{.State.Pid}}' exabeam-load-balancer-host1) -n netstat -natlp | grep LISTEN
+
+# Run ansible command
+$ ansible <all or host> -i /opt/exabeam_installer/inventory [-m <shell>] -a <command> # use -m if you need to use pipes
+
+# Clean OS caches
+$ sync; echo {1,2,3} > /proc/sys/vm/drop_caches
+
+# Consul:
+$ curl http://localhost:8500/v1/health/service/
+$ curl http://localhost:8500/v1/catalog/datacenters
+$ curl http://localhost:8500/v1/catalog/nodes?dc=dc2
+
+# TCPDump
+$ sudo tcpdump -i any port <port> and src <hostname_or_ip> or dst <hostname_or_ip>
+# Inspect a TCPDump captured package
+$ sudo tcpdump -nnnvvXi any port <port> and src <hostname_or_ip> or dst <hostname_or_ip>
+
+# list an alias from a keystore
+keytool -list -v -keystore keystore.jks -alias <alias>
+
+AWK to count number of occurencies
+$ grep -Ri <something> <somewhere> | awk '{$5[<,>,=]<something_else> && x+=1}END{print x}'
+
+AWK to medium value
+$ grep -Ri <something> <somewhere> | awk '{x+=$5}END{x/=$NR;print x}'
+
+# Elastalert status
+docker exec -it exabeam-dl-elastalert curl exabeam-dl-elastalert:3030/status | jq
+
+# Hadoop HA state
+$ hdfs haadmin -getAllServiceState
+
+# Hadoop report
+$ hdfs dfsadmin -report [-live] [-dead] | grep Hostname
+
+# Hadoop safemode
+$  hdfs dfsadmin -safemode <enter | leave | get | wait>
+
+# Hadoop filesystem health
+$ hdfs fsck /
+
+# Hadoop topology
+$ hdfs dfsadmin -printTopology
+
+# Check connectivity to GCS (Google Cloud Storage)
+$ curl https://storage.googleapis.com/exabeam-connectivity-test/go
+
+# Check external ip of SaaS environment
+curl -H "Metadata-Flavor: Google" http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip
+
+# Script header
+$ curl --header 'Content-Type: application/x-www-form-urlencoded' --header 'Accept: application/json' --header 'Csrf-Token: nocheck'
+
+# Query ECS (Exabeam Content Service)
+$ sudo docker exec exabeam-content-service-host1 curl -s http://exabeam-load-balancer-host1:8282/api/v1/cloudContent/content/payload/custom_mojito.conf
+
+# Content
+
+$ docker exec -ti exabeam-content-service-host1 curl -v --output BigCustomPackage2.zip --request GET 'http://localhost:8282/api/v1/cloudContent/packages/<packageId>/file'
+$ curl -v -H "Content-Type:multipart/form-data; boundary=0" -F "data=@CONT-6977_1.zip" --request 'POST' --url 'http://localhost:8282/api/v1/cloudContent/files'
+$ curl -v --request 'PUT' --url 'http://localhost:8282/api/v1/cloudContent/files/<id>'
+$ curl -v --request DELETE http://localhost:8282/api/v1/cloudContent/packages/<packageId>

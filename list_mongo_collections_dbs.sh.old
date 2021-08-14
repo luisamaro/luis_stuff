@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+#####################################################
+# This script list all collections of all databases #
+#                                                   #
+# Script made by Luis Amaro - Exabeam               #
+# AA i46                                            #
+#####################################################
+
+MONGO_DBS=$(/usr/bin/docker run --init --rm --net exabeam -v /opt/exabeam/data/mongo/tmp:/opt/exabeam/data/mongo/tmp exabeam-mongo /usr/bin/mongo --host mongodb-router-host1 --port 27017 --quiet --eval 'db.getMongo().getDBNames()' | sed -e 's/"//g' -e 's/,//g')
+MONGO_DBS=$(echo "${MONGO_DBS}" | awk '{for (i=2; i<=NF-1; i++) print $i}')
+
+for DB in ${MONGO_DBS}; do
+  COLLECTIONS=$(/usr/bin/docker run --init --rm --net exabeam -v /opt/exabeam/data/mongo/tmp:/opt/exabeam/data/mongo/tmp exabeam-mongo /usr/bin/mongo "${DB}" --host mongodb-router-host1 --port 27017 --quiet --eval 'db.getCollectionNames()' | sed -e 's/"//g' -e 's/,//g')
+  COLLECTIONS=$(echo "${COLLECTIONS}" | awk '{for (i=2; i<=NF-1; i++) print $i}')
+  for COLLECTION in ${COLLECTIONS}; do
+    echo "${DB}.${COLLECTION}"
+  done
+done

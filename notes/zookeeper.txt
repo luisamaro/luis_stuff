@@ -1,0 +1,31 @@
+# To check zookeeper status
+# Run the following commands
+
+$ echo <option> | nc 127.0.0.1 2181
+
+# You can allways do this from inside the zookeeper-host1 container
+docker exec -it zookeeper bash
+
+Options:
+dump
+  Lists the outstanding sessions and ephemeral nodes. This only works on the leader.
+
+envi
+  Print details about serving environment
+
+kill
+  Shuts down the server. This must be issued from the machine the ZooKeeper server is running on.
+
+reqs
+  List outstanding requests
+
+ruok
+  Tests if server is running in a non-error state. The server will respond with imok if it is running. Otherwise it will not respond at all.
+  It should return imok if everything ok
+
+srst
+  Reset statistics returned by stat command.
+
+stat
+  Lists statistics about performance and connected clients.
+

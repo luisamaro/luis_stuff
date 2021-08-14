@@ -1,0 +1,84 @@
+# Read messages from queue DL
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka-host1:9092 --topic lms.kafka.topic --from-beginning
+
+# Read messages from queue SC
+$ /opt/kafka/bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic lms.kafka.topic --from-beginning
+
+# Check installed syslog connectors
+$ curl -s localhost:8083/connectors | python -m json.tool
+$ curl -s localhost:8083/connectors/syslog_connector_<connector_id>/config | python -m json.tool
+$ curl -s localhost:8083/connectors/syslog_connector_<connector_id>/status | python -m json.tool
+
+# Check installed mojito connectors
+$ curl -s http://localhost:8084/connectors | python -m json.tool
+$ curl -s http://localhost:8084/connectors/mojito-connector | python -m json.tool
+$ curl -s http://localhost:8084/connectors/mojito-connector/config | python -m json.tool
+$ curl -s http://localhost:8084/connectors/mojito-connector/status | python -m json.tool
+
+# Check connectors consumer groups
+$ docker exec -it kafka-host2 /opt/kafka/bin/kafka-consumer-groups.sh --new-consumer --describe --bootstrap-server kafka-host2:9092 --group connect-syslog_connector_<connector_id> | awk '{s+=$5} END {print s}'
+
+# Restart connector
+$ curl -s http://localhost:8083/connectors/syslog_connector_<connector_id>/restart -XPOST
+$ curl -s http://localhost:8084/connectors/mojito-connector/restart -XPOST
+
+# Delete connector
+$ curl -s http://localhost:8083/connectors/syslog_connector_<connector_id> -XDELETE
+
+# Check Kafka EPS
+$ journalctl -fu exabeam-dl-mojito-kafka-connect -n1000 | grep eps
+
+# Check partitions
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe --zookeeper zookeeper-host1:2181 --under-replicated-partitions
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe  --zookeeper zookeeper-host1:2181 --topic __consumer_offsets
+
+# Reset offsets
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka-host1:9092 --group logstash --reset-offsets --to-latest --all-topics --execute
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka-host1:9092 --group logstash --reset-offsets --to-latest --topic <topic_name> --execute
+
+# List kafka connector groups
+$ docker exec kafka-host1 /opt/kafka/bin/kafka-consumer-groups.sh --all-topics --bootstrap-server localhost:9092  --list
+
+# Combined connectors lag
+$ docker exec -it kafka-host1 kafka-consumer-groups.sh --all-topics --bootstrap-server kafka-host1:9092 --describe --group connect-<connector_id> | awk '{s+=$5;e+=$3}BEGIN{print "Lag\tOffset"}END{printf ("%d %d\n",s,e)}'
+$ printf '\n%s' "Combined lag on topic 'lms.kafka.topic': "; docker exec -it kafka-host1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka-host1:9092 --describe --group connect-<connector_id> 2> /dev/null | awk '/lms.kafka.topic/{s+=$5}END{printf ("%'\''d\n",s)}'
+$ docker exec kafka-host1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092  --describe --group connect-<connector_id>
+
+# Kafka topic connector state
+$ docker exec kafka-host1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka-host1:9092 --describe --group <topic_group> --state
+
+# Topic description
+$ docker exec kafka-host1 /opt/kafka/bin/kafka-topics.sh --zookeeper zookeeper-host1:2181 --describe
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe --zookeeper zookeeper-host1:2181 --topic <topic>
+
+# Under replicated topics
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe --zookeeper zookeeper-host1:2181 --topic <topic> --under-replicated-partitions
+
+# Change mojito connector EPS and timeouts into ES
+## save the current mojito pipeline config
+$ curl -s http://localhost:8084/connectors/mojito-connector/config | python -m json.tool > config.json
+## open config.json to change eps per host to 3000/3500 and elasticsearch timeout, add following properties and save the file
+{
+    ...,
+    "eps.limit.per.worker": "3000",
+    "mojito.elastic.connection.timeout.ms": "10000", #default is 3000
+    "read.timeout.ms": "15000",                      #default is 5000
+    "max.total.connection.per.route": "8"
+}
+
+## use following settings depending on the size of the cluster
+single host DL
+"max.total.connection.per.route": "8"
+2-host DL
+"max.total.connection.per.route": "4"
+3-host DL
+"max.total.connection.per.route": "3"
+
+## publish the config to mojito pipeline
+$ curl -s -XPUT -H "Content-Type: application/json" --data @config.json http://localhost:8084/connectors/mojito-connector/config
+
+
+###
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe --zookeeper zookeeper-host1:2181 --topic connect-offsets
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe --zookeeper zookeeper-host1:2181 --topic connect-status
+$ docker exec -it kafka-host1 /opt/kafka/bin/kafka-topics.sh --describe --zookeeper zookeeper-host1:2181 --topic connect-configs

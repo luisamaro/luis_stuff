@@ -1,0 +1,10 @@
+# Enable smartctl
+$ smartctl -s on -d ata /dev/sdX
+
+# Check hard disk failing report
+
+$ smartctl --attributes --log=selftest /dev/sdX
+$ smartctl -a /dev/sdX
+$ smartctl -H /dev/sdX
+$ smartctl -d ata -t long /dev/sdX
+

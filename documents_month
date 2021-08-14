@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+month=(blank gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre)
+curl -ks https://localhost:9200/_cat/indices?v | grep -E "exabeam-2020.$1" | awk -v m="${month[$1]}" '{x+=$7}END{print m": " x}'
+

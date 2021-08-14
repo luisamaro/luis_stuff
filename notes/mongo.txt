@@ -1,0 +1,46 @@
+# Do not limit query to 20 results
+# Set DBQuery.shellBatchSize = <value> or DBQuery.shellBatchSize = db.<collection_name>.count() for all
+$ mongo <db_name> --eval 'DBQuery.shellBatchSize = db.<collection_name>.count(); db.<collection_name>.find()'
+
+mongos> sh.status
+mongos> show dbs
+mongos> use db
+mongos> show collections
+mongos> db.<collection_name>.findOne()
+mongos> db.<collection_name>.find({“<field>.<sub-field>”:”<something>”}]
+mongos> db.<collection_name>.find({“<somefield>”:”<something>”[, “<some_field>”:”<something>”]}[{“<somefield>”:”<something>”[, “<some_field>”:”<something>”]}])
+
+# Regex Search
+db.<collection>.find({ "<field>" : /<some_regex>/<options> })
+  <options>
+      i - Case insensitive
+      m - include anchors in regex, like ^ or $
+      x - extended - can include #,\n,<spaces> except if escaped
+      s - . means all characters including \n
+
+mongos> use lms_agent_db
+mongos> db.agent_collection.find({agent_ip:”ip_address”},{id:1, agent_ip:1, agent_host:1, agent_type:1, "agent_health.alive":1, last_heartbeat_received:1}).pretty()
+
+# Find unresolved alerts
+mongos> use health_db
+mongos> db.health_alert.find({ "resolved_time": { "$eq": null }})
+
+# Distinct
+
+db.<collection>.distinct("<index>")
+
+# Distinct count
+mongos> db.events_20191024_m.aggregate({ "$match": { "b": { "$ne": null }}}, { "$group": { "_id": { "b": "$b"}, "count": { "$sum": 1}}})
+mongos> db.events_20191024_m.aggregate({ "$match": { "b": { "$ne": null }}}, { "$group": { "_id": { "b": "$b"}, "count": { "$sum": 1} }}, { "$group": { "_id": { "b": "$_id.b"}, "distinctCount": { "$sum": "$count" }, "totalCount": { "$sum": 1 } }})
+
+# Mongo balancer state
+$ mongo -eval "sh.getBalancerState()"
+$ docker exec -it mongodb-router-host1 mongo -eval "sh.getBalancerState()"
+
+# Mongo balancer running ?
+$ mongo -eval "sh.isBalancerRunning()"
+$ docker exec -it mongodb-router-host1 mongo -eval "sh.isBalancerRunning()"
+
+# Change value in mongo collection
+$ mongo <db> --quiet --eval='db.<collection>.update({"field_to_search": "<value>"}, {"$set": {"<field_to_change>": "<value>"}}, {multi: true})'
+

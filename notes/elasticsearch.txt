@@ -1,0 +1,267 @@
+# Cluster settings
+curl -ks https://localhost:9200/_cluster/settings&pretty'
+
+# Cluster default settings
+curl -ks 'https://localhost:9200/_cluster/settings?include_defaults=true&pretty'
+
+# Cluster Health
+curl -ks https://localhost:9200/_cluster/health?pretty
+
+# List indices
+curl -ks 'https://localhost:9200/_cat/indices?v&s=index&v'
+
+# List shards
+curl -ks 'https://localhost:9200/_cat/shards?s=index&v'
+
+# List nodes
+curl -ks 'https://localhost:9200/_cat/nodes?s=nodes&v'
+
+# List tasks
+curl -ks 'https://localhost:9200/_cat/tasks?v
+
+# Allocation types for all cluster
+curl -ks -XPUT -H "Content-Type: application/json" 'https://localhost:9200/_cluster/settings?pretty' -d '{"persistent|transient" : {"cluster.routing.allocation.enable" : "none|primaries|new_primaries|all"}}'
+
+# Allocation types for existing indices
+curl -ks -XPUT -H "Content-Type: application/json" 'https://localhost:9200/_all/_settings?pretty' -d '{"index.routing.allocation.enable" : "none|primaries|new_primaries|all"}'
+
+# Number of shards to allocate per index
+curl -ks https://localhost:9200/_all/_settings?pretty -H "Content-Type: application/json" -d '{"index.routing.allocation.total_shards_per_node": "<#number>"}' -XPUT
+curl -ks https://localhost:9200/_all/_settings?pretty -H "Content-Type: application/json" -d '{"index.number_of_replicas" : "0" }' -XPUT
+
+# Check moves/merges
+curl -ks "https://localhost:9200/index-migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"match_all":{}}}'
+curl -ks "https://localhost:9200/index-migrations/migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"match_all":{}}}'
+curl -ks "https://localhost:9200/index-migrations/migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"term": {"move.status": "uninitiated"}},"_source":{"excludes":["move.metrics","merge.metrics"]}}'
+curl -ks "https://localhost:9200/index-migrations/migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"term": {"move.status": "in_progress"}},"_source":{"excludes":["move.metrics","merge.metrics"]}}'
+curl -ks "https://localhost:9200/index-migrations/migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"term": {"merge.status": "uninitiated"}},"_source":{"excludes":["merge.metrics","move.metrics"]}}'
+curl -ks "https://localhost:9200/index-migrations/migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"term": {"merge.status": "in_progress"}},"_source":{"excludes":["merge.metrics","move.metrics"]}}'
+
+# delete stuck moves
+curl -ks https://localhost:9200/index-migrations/migrations/_id -XDELETE
+curl -ks https://localhost:9200/index-migrations/migrations/$(curl -ks "https://localhost:9200/index-migrations/migrations/_search?pretty" -H "Content-Type: application/json" -d '{"query": {"term": {"move.status": "in_progress"}},"_source":{"excludes":["move.metrics","merge.metrics"]}}' | grep _id | awk -F\" '{print $4}') -XDELETE
+## Recovery status
+# Indices status with resumed explain
+curl -ks "https://localhost:9200/_cat/shards?s=index&h=index,id,shard,prirep,state,docs,store,ip,node,ua,ur"
+
+# Shard recovery status
+curl -ks "https://localhost:9200/_cat/recovery?v&h=index,shard,time,source_node,target_node,files_percent,bytes_percent&detailed=true&active_only=true"
+
+# Retry failed
+curl -sk 'https://localhost:9200/_cluster/reroute?retry_failed' -XPOST
+
+# Shard allocation explained (allocation errors/warning with extended explaination)
+curl -sk -H 'Content-Type: application/json' -XGET https://localhost:9200/_cluster/allocation/explain?pretty
+
+curl -sk -H 'Content-Type: application/json' -XGET 'https://localhost:9200/_cluster/allocation/explain?pretty' -d '{ "index": "index_name", "shard": 0, "primary": true }'
+
+# Allocate an empty shards
+curl -ks https://localhost:9200/_cluster/reroute?pretty -XPOST -d '{ "commands": [{ "allocate_empty_primary": { "index": "exabeam-2020.04.06", "shard": 0, "node": "<host_name>", "accept_data_loss": 'true' }}]}' -H 'content-type: application/json'
+
+# define number of primary/replica shards
+# primary shards can only be reduced into a new index with the shrink API
+curl -ks https://localhost:9200/<index_name|_all>/_settings?pretty -H "Content-Type: application/json" -d '{ "index.number_of_shards" : "2" }' -XPUT
+curl -ks https://localhost:9200/<index_name|_all>/_settings?pretty -H "Content-Type: application/json" -d '{ "index.number_of_replicas" : "1" }' -XPUT
+# Shrink index
+curl -ks https://localhost:9200/<source_index>/_shrink/<target_index> -H "Content-Type: application/json" -d '{
+  "settings": {
+    "index.number_of_replicas": 2,
+    "index.number_of_shards": 1
+  }
+}
+
+# Accelarate recovery
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.node_concurrent_recoveries": 6 }}' -XPUT #
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "indices.recovery.max_bytes_per_sec":"3000mb"}}' -XPUT
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.node_concurrent_incoming_recoveries": 6 }}' -XPUT
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.node_concurrent_outgoing_recoveries": 6 }}' -XPUT
+
+# Remove accelarated recovery
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.node_concurrent_recoveries": null }}' -XPUT
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "indices.recovery.max_bytes_per_sec": null }}' -XPUT
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.node_concurrent_incoming_recoveries": null }}' -XPUT
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.node_concurrent_outgoing_recoveries": null }}' -XPUT
+
+# Rebalances
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.rebalance" : "all|primaies|replicas|none" }} -XPUT
+
+# Allow rebalances
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation."allow_rebalance" : "indices_all_active|indices_primaries_active|always" }} -XPUT
+
+# Accelarate rebalances
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.cluster_concurrent_rebalance": 6 }}' -XPUT # Default 2
+
+# Remove accelarate rebalances
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "cluster.routing.allocation.cluster_concurrent_rebalance": null }}' -XPUT
+
+# Memory used by nodes
+$ curl -ks 'https://localhost:9200/_nodes/stats?pretty' | egrep 'heap_used_percent|heap_used_in_bytes|"name"' | grep -v non
+
+# Ping API
+curl -sk http://localhost:8484/dl/api/ping
+# API Health
+curl -sk http://localhost:8484/dl/api/health
+
+# Logstash debug
+curl -ks -XPUT 'localhost:9600/_node/logging?pretty' -H 'Content-Type: application/json' -d '{"logger.logstash.outputs.kafka" : "DEBUG"}'
+
+# Put indices in r/w
+curl -ks -XPUT -H "Content-Type: application/json" https://localhost:9200/_all/_settings -d '{"index.blocks.read_only_allow_delete": null}'
+
+# Put an index r/w
+curl -XPUT -H "Content-Type: application/json" https://localhost:9200/<index_name>/_settings -d '{"index.blocks.read_only_allow_delete": null}'
+
+# Prevent host from receiving shards
+curl -ks "https://localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'{ "transient" : { "cluster.routing.allocation.exclude._name" : "<node_name>" }}' -XPUT
+
+# Remove node from allocation "blacklist"
+curl -ks "https://localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'{ "transient" : { "cluster.routing.allocation.exclude._name" : null }}' -XPUT
+
+# Archiving/snapshoting
+# Archiving configuration
+
+# See repository
+$ curl -ks https://localhost:9200/_snapshot?pretty
+$ curl -ks https://localhost:9200/_snapshot/<repo_name>?pretty
+
+# List snapshots
+$ curl -ks 'https://localhost:9200/_cat/snapshots/<repo_name>?pretty&v'
+
+# Check if there is a snapshot in progress
+$ curl -ks https://localhost:9200/_snapshot/<repo_name>/_current?pretty
+$ curl -ks https://localhost:9200/_snapshot/<repo_name>/_status?pretty
+$ curl -ks https://localhost:9200/_snapshot/<repo_name>/<snapshot_name>/_status?pretty
+
+# See snapshot info
+$ curl -ks https://localhost:9200/_snapshot/<repo_name>/<snapshot_name>?pretty
+
+# Make a snapshot
+$ curl -sk 'https://localhost:9200/_snapshot/<repo_name>/<snapshot_name>?wait_for_completion=<true|false>' -H 'Content-Type: application/json' -d '{
+  "indices": "<index_name1[,index_name2][,index_name_n...]>",
+  "ignore_unavailable": <true|false>,
+  "include_global_state": <true|false>
+}' -XPOST
+
+# Restore a snapshot
+$ curl -sk 'https://localhost:9200/_snapshot/<repo_name>/<snapshot_name>/_restore?wait_for_completion=<true|false>' -H 'Content-Type: application/json' -d '{
+{
+  "indices": "<index_name1[,index_name2][,index_name_n...]>",
+  "ignore_unavailable": <true|false>,
+  "include_global_state": <true|false>,
+  "rename_pattern": "index_(.+)",
+  "rename_replacement": "restored_index_$1",
+  "include_aliases": <true|false>
+
+} -XPOST
+
+# Delete a snapshot
+$ curl -ks https://localhost:9200/_snapshot/<repo_name>/<snapshot_name> -XDELETE
+
+# Configure snapshot storage (S3 example)
+curl -sk -XPUT -H "Content-Type: application/json" 'https://localhost:9200/_snapshot/s3_repository?verify=false&pretty' -d'
+{
+  "type": "s3",
+   "settings": {
+   "bucket": "some_name",
+   "region": "some_region",
+   "access_key": "xxx",
+   "secret_key": "xxx"
+   "server_side_encryption":true
+  }
+}'
+
+
+# Searches
+$ curl -ks -H 'Content-Type: application/json' https://localhost:9200/<index_name>/_search?pretty -d'{ "query": { "match_all": {}}}'
+$ curl -ks -H 'Content-Type: application/json' https://localhost:9200/<index_name>/_search?pretty -d'{ "query": { "match_none": {}}}'
+
+# Query that will never match anything:
+
+{
+    "query": {
+        "match_none": {}
+    }
+}
+
+{
+  "query": {
+    "bool": {
+      "must": [{
+        "match_phrase": {
+          "message": " THISTEXTWILLNEVERMATCH THISTEXTWILLNEVERMATCH "
+        }
+      }]
+    }
+  }
+}
+
+# Queries to match everything:
+
+{
+    "query": {
+        "match_none": {}
+    }
+}
+{
+  "query": {
+    "bool": {
+      "must": [{
+        "regexp": {
+          "message": ".*"
+        }
+      }]
+    }
+  }
+}
+
+{
+  "query": {
+    "bool": {
+      "must": [{
+        "wildcard": {
+          "message": "*"
+        }
+      }]
+    }
+  }
+}
+
+###
+
+# Exclude nodes from cluster allocation
+$ curl -XPUT -ks https://localhost:9200/_cluster/settings -H 'Content-Type: application/json' -d '{ "transient" :{ "cluster.routing.allocation.<include|exclude|require>.<_ip|_node|_host>" : "node1, node2,.." }}'
+# To exclude a specific  index from specific nodes
+$ curl -XPUT -sk "https://localhost:9200/exabeam-20xx.xx.xx/_settings" -H 'Content-Type: application/json' -d'{ index.routing.allocation.<include|exclude|require>.<_ip|_node|_host>": "node1,node2,…" }
+# Move from hot to warm and vice-versa
+$ curl -XPUT -ks "https://localhost:9200/<index_name>/_settings" -H 'Content-Type: application/json' -d '{"index":{"routing.allocation.require.box_type":"<hot|warm>"}}'
+
+### Migrator API
+
+$ curl http://localhost:8000/v1/mgmt/mover/config -H 'accept: application/json'
+
+### ES/IR upgrade issue
+
+* Caution: Only perform following steps if you could not recover ES from 'red' status.
+   Delete index data
+Check the ES status:
+curl 'http://localhost:9200/_cluster/stats?pretty'
+If the status of cluster of ES is 'red', and could not be recovered by restarting the service, we may need to delete the index data. Before doing that, please first try to investigate the reason of crash (usually it is caused by that shards are unassigned).
+2. Check the cluster allocation explanation and record the reason for future investigation.
+curl 'http://localhost:9200/_cluster/allocation/explain?pretty'
+3. Look up the location of index data and remove the index data from ES.
+less /opt/exabeam/data/logs/lms/exabeam-es.a.log
+#look for the latest line that contains something like following:
+#[2019-10-08T22:40:54,365][INFO ][o.e.c.m.MetaDataMappingService] [host2-0] [incidents_main/iYqHVZ98TCGPdTVGZJs6nQ] update_mapping [incident]
+#iYqHVZ98TCGPdTVGZJs6nQ is the index data folder that we need to delete. Do not delete the [.kibana/GxeJh0EoS9yfwz6390S-_Q]
+
+sudo ls /opt/exabeam/data/lms/elasticsearch/0/nodes/0/indices/
+# you should see both GxeJh0EoS9yfwz6390S-_Q and iYqHVZ98TCGPdTVGZJs6nQ directories.
+
+sudo mv /opt/exabeam/data/lms/elasticsearch/0/nodes/0/indices/iYqHVZ98TCGPdTVGZJs6nQ ~/
+4. restart the ES and then check the status of the cluster. It should be "yellow" or "green" now.
+
+$ java -cp Soar-server-assembly-0.1.jar com.exabeam.soar.server.upgrade.RunReIndex -c /opt/exabeam/soar-server -t <type>
+#type can be one of the following: incident, entity, artifact, field, comment
+
+
+curl -ks -H 'Content-Type: application/json' https://localhost:9200/_cluster/settings?pretty -d '{ "transient": { "indices.breaker.total.limit": "80%" }}' -XPUT

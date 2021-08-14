@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+###############################################
+#                                             #
+# This script will change all tabs to 2 space #
+# it's usually bad practice to use tabs in    #
+# text files except in specific contexts      #
+# remove all trailing white spaces            #
+#                                             #
+# Luis Amaro                                  #
+#                                             #
+###############################################
+
+usage() {
+  echo "Usage:"
+  echo "$(basename "${0}") <filename>"
+  echo "$(basename "${0}") -h|--help"
+  exit "${1}"
+}
+
+# Main
+# If there's less then or more then one argument show usage
+[[ "${#}" -ne 1 ]] && echo "Use 1 option exactually" && usage 1
+# If the option is -h or --help show usage
+[[ "${1}" == "-h" ]] || [[ $1 == "--help" ]] && usage 0
+# If file is writable
+[[ ! -w "${1}" ]] && echo "File not writable or doesn't exist" && usage 2
+# make a backup
+# convert pretty quotes to normal quotes
+# convert tabs to 2 spaces
+# remove trailing white spaces
+# exit
+[[ -w "${1}" ]] && \
+cp "${1}" "${1}.$(date '+%Y%M%d').bak" && \
+sed -i "s/“/\"/g;s/‘/'/g;s/\t/  /g;s/[ ]*$//g" "${1}"
+echo "File ${1} changed" && \
+exit 0
+# Otherwise exit with error message
+echo "An error occured" && exit 2

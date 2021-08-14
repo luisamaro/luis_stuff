@@ -1,0 +1,73 @@
+# Exabeam SkyFormation
+Host 35.168.135.206 sk4
+  Hostname 35.168.135.206
+  IdentityFile ~/.ssh/xxx.pem
+  User ubuntu
+
+# CCT/Proxmox Hosts
+Host 10.70.*
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-ctr
+
+Host 10.203.0.121 exadebian
+  Hostname 10.203.0.121
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-ctr
+
+Host 10.203.0.124 exasquid
+  Hostname 10.203.0.124
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-ctr
+
+Host 10.203.0.50 proxmox
+  Hostname 10.203.0.50
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-ctr
+
+Host 10.203.0.51 proxmox2
+  Hostname 10.203.0.51
+  User root
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-ctr
+
+# Exabeam Hosts
+Host 10.203.0.37 lad-aa
+  Hostname 10.203.0.37
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-cbc
+
+Host 10.203.0.38 lab-ir
+  Hostname 10.203.0.38
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-cbc
+
+Host 10.203.0.36 lad-aa3
+  Hostname 10.203.0.36
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-cbc
+
+Host 10.203.0.34 lab-aa2
+  Hostname 10.203.0.34
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-cbc
+
+Host 10.203.0.35 lab-ir2
+  Hostname 10.203.0.35
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-cbc
+
+Host 10.203.0.39 lab-dl
+  Hostname 10.203.0.39
+  User exabeam
+  IdentityFile ~/.ssh/xxx.pem
+  Ciphers aes256-ctr
+
