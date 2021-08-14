@@ -8,6 +8,6 @@ usage()
 }
 
 [[ $# -ne 1 ]] && usage
-gcloud compute instances list --project "ops-dist-${1}" && exit 0
+gcloud compute instances list --project "${1}" && exit 0
 exit 2
 

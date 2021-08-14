@@ -29,6 +29,6 @@ while getopts ":duh" ARGS; do
 done
 shift $(( OPTIND-1 )) # Shift option index back
 #
-[[ "${direction}" == "download" ]] && rsync -e "gcloud compute ssh --project ops-dist-${1}" "luis@${1}-cli.ia.exabeam.com:/home/luis_exabeam_com/${2}" "${3}" && exit 0
-[[ "${direction}" == "upload" ]] && rsync -e "gcloud compute ssh" "${2}" "luis@${1}-cli.ia.exabeam.com:/home/luis_exabeam_com/${3}" && exit 0
+[[ "${direction}" == "download" ]] && rsync -e "gcloud compute ssh --project ${1}" "luis@${1}-cli:/home/${2}" "${3}" && exit 0
+[[ "${direction}" == "upload" ]] && rsync -e "gcloud compute ssh" "${2}" "luis@${1}-cli:/home/${3}" && exit 0
 exit 2

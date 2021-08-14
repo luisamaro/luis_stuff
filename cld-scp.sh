@@ -27,6 +27,6 @@ while getopts ":duh" ARGS; do
 done
 shift $(( OPTIND-1 )) # Shift option index back
 
-[[ "${direction}" == "download" ]] && gcloud compute scp --project "ops-dist-${1}" "${1}-cli:/home/luis_exabeam_com/${2}" "${3}" && exit 0
-[[ "${direction}" == "upload" ]] && gcloud compute scp --project "ops-dist-${1}" "${2}" "${1}-cli:/home/luis_exabeam_com/" && exit 0
+[[ "${direction}" == "download" ]] && gcloud compute scp --project "${1}" "${1}-cli:/home/${2}" "${3}" && exit 0
+[[ "${direction}" == "upload" ]] && gcloud compute scp --project "${1}" "${2}" "${1}-cli:/home/" && exit 0
 exit 2
