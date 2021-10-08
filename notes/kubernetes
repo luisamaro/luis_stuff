@@ -1,0 +1,1 @@
+kubectl --context=cix --namespace=notessa-staging get pod microsite-browser-visitor-staging-64746bf884-zcqwt -o json | jq '.metadata.labels.team'

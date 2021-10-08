@@ -20,7 +20,7 @@ usage() {
 
 # Main
 # If there's less then or more then one argument show usage
-[[ "${#}" -ne 1 ]] && echo "Use 1 option exactually" && usage 1
+[[ "${#}" -ne 1 ]] && echo 'Use 1 at exctly option' && usage 1
 # If the option is -h or --help show usage
 [[ "${1}" == "-h" ]] || [[ $1 == "--help" ]] && usage 0
 # If file is writable
