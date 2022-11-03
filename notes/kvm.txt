@@ -1,0 +1,113 @@
+### Add LV partiton to VM as new disk
+On the KVM add a disk to a VM
+# lvcreate -n 192-168-203-48-temp -L+10G virtualization
+  Logical volume "192-168-203-48-temp" created.
+
+# virsh attach-disk 192-168-203-48 --source /dev/virtualization/192-168-203-48-temp --sourcetype block --target vdb --persistent
+Disk attached successfully
+
+# virsh domblklist 192-168-203-48 --details
+Type       Device     Target     Source
+------------------------------------------------
+block      disk       vda        /dev/virtualization/192-168-203-48
+block      disk       vdb        /dev/virtualization/192-168-203-48-temp
+
+On the VM
+# lsblk
+NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+vda    253:0    0  50G  0 disk 
+└─vda1 253:1    0  50G  0 part /
+vdb    253:16   0  10G  0 disk 
+
+# parted /dev/vdb print
+Error: /dev/vdb: unrecognised disk label
+Model: Virtio Block Device (virtblk)                                      
+Disk /dev/vdb: 10.7GB
+Sector size (logical/physical): 512B/512B
+Partition Table: unknown
+Disk Flags: 
+
+# parted /dev/vdb mklabel msdos
+Information: You may need to update /etc/fstab
+
+# parted /dev/vdb print free
+Model: Virtio Block Device (virtblk)
+Disk /dev/vdb: 10.7GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+Disk Flags: 
+
+Number  Start   End     Size    Type  File system  Flags
+        32.3kB  10.7GB  10.7GB        Free Space
+
+# parted /dev/vdb mkpart primary 0 10.7GB
+Warning: The resulting partition is not properly aligned for best performance.
+Ignore/Cancel? I                                                          
+Information: You may need to update /etc/fstab.
+
+# mkfs.xfs /dev/vdb1
+meta-data=/dev/vdb1              isize=512    agcount=4, agsize=655360 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=1        finobt=0, sparse=0
+data     =                       bsize=4096   blocks=2621439, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+
+# lsblk -f
+NAME   FSTYPE LABEL UUID                                 MOUNTPOINT
+vda                                                      
+└─vda1 ext4         5ff3f38c-9e49-4919-b35e-2b110bdd2593 /
+vdb                                                      
+└─vdb1 xfs          35986528-bdc7-4e84-97e3-fdc081a77e66 
+
+### Resize VM disk
+On the KVM
+# lvextend -L+10G /dev/virtualization/192-168-203-48-temp 
+  Size of logical volume virtualization/192-168-203-48-temp changed from 10.00 GiB (2560 extents) to 20.00 GiB (5120 extents).
+  Logical volume 192-168-203-48-temp successfully resized.
+
+# lvs | grep -E "LV|192-168-203-48-temp"
+  LV                          VG             Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  192-168-203-48-temp         virtualization -wi-ao---- 20.00g
+
+# virsh qemu-monitor-command 192-168-203-48 --hmp "info block"
+drive-virtio-disk0: removable=0 io-status=ok file=/dev/virtualization/192-168-203-48 ro=0 drv=raw encrypted=0
+drive-virtio-disk1: removable=0 io-status=ok file=/dev/virtualization/192-168-203-48-temp ro=0 drv=raw encrypted=0
+
+# virsh qemu-monitor-command 192-168-203-48 --hmp "block_resize drive-virtio-disk1 20G"
+
+On the VM
+
+# mount /dev/vdb1 /mnt
+
+# lsblk | grep -E "NAME|vdb"
+NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+vdb    253:16   0  20G  0 disk 
+└─vdb1 253:17   0  10G  0 part /mnt
+
+Install cloud-utils-growpart
+
+# growpart /dev/vdb 1
+CHANGED: partition=1 start=1 old: size=20971519 end=20971520 new: size=41943006 end=41943007
+
+# lsblk | grep -E "NAME|vdb"
+NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+vdb    253:16   0  20G  0 disk 
+└─vdb1 253:17   0  20G  0 part /mnt
+
+# xfs_growfs /dev/vdb1
+meta-data=/dev/vdb1              isize=512    agcount=4, agsize=655360 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=1        finobt=0 spinodes=0
+data     =                       bsize=4096   blocks=2621439, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 2621439 to 5242875
+
+

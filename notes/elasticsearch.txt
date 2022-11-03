@@ -1,5 +1,6 @@
 # Cluster settings
 curl -ks https://localhost:9200/_cluster/settings?pretty'
+curl -ks 'https://localhost:9200/_cat/health'
 
 # Cluster default settings
 curl -ks 'https://localhost:9200/_cluster/settings?include_defaults=true&pretty'
