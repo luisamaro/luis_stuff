@@ -1,1 +1,14 @@
-kubectl --context=cix --namespace=notessa-staging get pod microsite-browser-visitor-staging-64746bf884-zcqwt -o json | jq '.metadata.labels.team'
+# get team label for pods
+kubectl --context=<context_name> --namespace=notessa-staging get pod <pod_name> -o json | jq '.metadata.labels.team'
+
+# restart pods from an app
+kubectl --context=<context_name> --namespace=<namespace_name> rollout restart deployment/logprocessing
+kubectl --context=<context_name> --namespace=<namespace_name> delete pod -l service=logprocessing
+
+# get nodes
+kubectl --context=<context_name> --namespace=<namespace_name> get nodes
+
+# get deployments/apps
+kubectl --context=<context_name> --namespace=<namespace_name> get nodes
+
+./setup-kubectl-context.sh -r infra all

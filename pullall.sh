@@ -2,6 +2,7 @@
 
 #! /usr/bin/env bash
 
+WORKING_FOLDER=$(pwd)
 BLUE='\033[0;34m'
 CIAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -15,8 +16,8 @@ do
   echo -e "\n${CIAN}Repo: ${BLUE}${FOLDER}${NOCOLOR}" && \
   echo -e "${CIAN}Branch: ${BLUE}$(awk -F/ '{print $3}' ${FOLDER}/.git/HEAD)${NOCOLOR}" && \
   cd "${FOLDER}" && \
-  git pull && \
-  cd ..
+  git pull
+  cd "${WORKING_FOLDER}"
 done
 
 echo -e "\n${YELLOW}Happy pulling${NOCOLOR}"
